@@ -10,92 +10,94 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.decomposition import FastICA
 
-out = './ICA/'
+out = './output/ICA/'
 
 np.random.seed(0)
-digits = pd.read_hdf('./BASE/datasets.hdf','digits')
-digitsX = digits.drop('Class',1).copy().values
-digitsY = digits['Class'].copy().values
 
-madelon = pd.read_hdf('./BASE/datasets.hdf','madelon')        
-madelonX = madelon.drop('Class',1).copy().values
-madelonY = madelon['Class'].copy().values
+cancer = pd.read_hdf('./output/BASE/datasets.hdf','cancer')
+cancerX = cancer.drop('class',1).copy().values
+cancerY = cancer['class'].copy().values
 
+contra = pd.read_hdf('./output/BASE/datasets.hdf','contra')        
+contraX = contra.drop('class',1).copy().values
+contraY = contra['class'].copy().values
 
-madelonX = StandardScaler().fit_transform(madelonX)
-digitsX= StandardScaler().fit_transform(digitsX)
+contraX = StandardScaler().fit_transform(contraX)
+cancerX = StandardScaler().fit_transform(cancerX)
 
-clusters =  [2,5,10,15,20,25,30,35,40]
-dims = [2,5,10,15,20,25,30,35,40,45,50,55,60]
+clusters = range(2, 10)
+
+dims_contra = range(1, 12)
+dims_cancer = range(1, 10)
 #raise
 #%% data for 1
 
 ica = FastICA(random_state=5)
 kurt = {}
-for dim in dims:
+for dim in dims_contra:
     ica.set_params(n_components=dim)
-    tmp = ica.fit_transform(madelonX)
+    tmp = ica.fit_transform(contraX)
     tmp = pd.DataFrame(tmp)
     tmp = tmp.kurt(axis=0)
     kurt[dim] = tmp.abs().mean()
 
 kurt = pd.Series(kurt) 
-kurt.to_csv(out+'madelon scree.csv')
+kurt.to_csv(out+'contra scree.csv')
 
 
 ica = FastICA(random_state=5)
 kurt = {}
-for dim in dims:
+for dim in dims_cancer:
     ica.set_params(n_components=dim)
-    tmp = ica.fit_transform(digitsX)
+    tmp = ica.fit_transform(cancerX)
     tmp = pd.DataFrame(tmp)
     tmp = tmp.kurt(axis=0)
     kurt[dim] = tmp.abs().mean()
 
 kurt = pd.Series(kurt) 
-kurt.to_csv(out+'digits scree.csv')
-raise
+kurt.to_csv(out+'cancer scree.csv')
+#raise
 
 #%% Data for 2
 
-grid ={'ica__n_components':dims,'NN__alpha':nn_reg,'NN__hidden_layer_sizes':nn_arch}
+grid ={'ica__n_components':dims_contra,'NN__alpha':nn_reg,'NN__hidden_layer_sizes':nn_arch}
 ica = FastICA(random_state=5)       
 mlp = MLPClassifier(activation='relu',max_iter=2000,early_stopping=True,random_state=5)
 pipe = Pipeline([('ica',ica),('NN',mlp)])
-gs = GridSearchCV(pipe,grid,verbose=10,cv=5)
+gs = GridSearchCV(pipe,grid,verbose=10,cv=5,return_train_score=True)
 
-gs.fit(madelonX,madelonY)
+gs.fit(contraX,contraY)
 tmp = pd.DataFrame(gs.cv_results_)
-tmp.to_csv(out+'Madelon dim red.csv')
+tmp.to_csv(out+'contra dim red.csv')
 
 
-grid ={'ica__n_components':dims,'NN__alpha':nn_reg,'NN__hidden_layer_sizes':nn_arch}
+grid ={'ica__n_components':dims_cancer,'NN__alpha':nn_reg,'NN__hidden_layer_sizes':nn_arch}
 ica = FastICA(random_state=5)       
 mlp = MLPClassifier(activation='relu',max_iter=2000,early_stopping=True,random_state=5)
 pipe = Pipeline([('ica',ica),('NN',mlp)])
-gs = GridSearchCV(pipe,grid,verbose=10,cv=5)
+gs = GridSearchCV(pipe,grid,verbose=10,cv=5,return_train_score=True)
 
-gs.fit(digitsX,digitsY)
+gs.fit(cancerX,cancerY)
 tmp = pd.DataFrame(gs.cv_results_)
-tmp.to_csv(out+'digits dim red.csv')
-raise
+tmp.to_csv(out+'cancer dim red.csv')
+#raise
 #%% data for 3
 # Set this from chart 2 and dump, use clustering script to finish up
-dim = 45
+dim = 7
 ica = FastICA(n_components=dim,random_state=10)
 
-madelonX2 = ica.fit_transform(madelonX)
-madelon2 = pd.DataFrame(np.hstack((madelonX2,np.atleast_2d(madelonY).T)))
-cols = list(range(madelon2.shape[1]))
-cols[-1] = 'Class'
-madelon2.columns = cols
-madelon2.to_hdf(out+'datasets.hdf','madelon',complib='blosc',complevel=9)
+contraX2 = ica.fit_transform(contraX)
+contra2 = pd.DataFrame(np.hstack((contraX2,np.atleast_2d(contraY).T)))
+cols = list(range(contra2.shape[1]))
+cols[-1] = 'class'
+contra2.columns = cols
+contra2.to_hdf(out+'datasets.hdf','contra',complib='blosc',complevel=9)
 
-dim = 60
+dim = 2
 ica = FastICA(n_components=dim,random_state=10)
-digitsX2 = ica.fit_transform(digitsX)
-digits2 = pd.DataFrame(np.hstack((digitsX2,np.atleast_2d(digitsY).T)))
-cols = list(range(digits2.shape[1]))
-cols[-1] = 'Class'
-digits2.columns = cols
-digits2.to_hdf(out+'datasets.hdf','digits',complib='blosc',complevel=9)
+cancerX2 = ica.fit_transform(cancerX)
+cancer2 = pd.DataFrame(np.hstack((cancerX2,np.atleast_2d(cancerY).T)))
+cols = list(range(cancer2.shape[1]))
+cols[-1] = 'class'
+cancer2.columns = cols
+cancer2.to_hdf(out+'datasets.hdf','cancer',complib='blosc',complevel=9)

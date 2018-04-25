@@ -15,8 +15,20 @@ from sklearn.base import TransformerMixin,BaseEstimator
 import scipy.sparse as sps
 from scipy.linalg import pinv
 
-nn_arch= [(50,50),(50,),(25,),(25,25),(100,25,100)]
-nn_reg = [10**-x for x in range(1,5)]
+##nn_arch= [(50,50),(50,),(25,),(25,25),(100,25,100)]
+##nn_reg = [10**-x for x in range(1,5)]
+
+nn_arch = [(6,),
+          (6, 6),
+          (6, 6, 6),
+          (12,),
+          (12, 12),
+          (12, 12, 12),
+          (18,),
+          (18, 18),
+          (18, 18, 18)]
+
+nn_reg = [10**-x for x in np.arange(-1,5.01,1/2)]
 
 def cluster_acc(Y,clusterLabels):
     assert (Y.shape == clusterLabels.shape)
